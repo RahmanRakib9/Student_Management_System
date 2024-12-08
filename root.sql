@@ -1,9 +1,8 @@
-/* show databases; */
-create database University;
-/* show databases; */
+/* Create the database */
+CREATE DATABASE University;
+USE University;
 
-use University;
-
+/* Create the student_info table */
 CREATE TABLE student_info(
     roll INT NOT NULL UNIQUE PRIMARY KEY,
     name VARCHAR(30) NOT NULL,
@@ -11,6 +10,7 @@ CREATE TABLE student_info(
     email VARCHAR(30) NOT NULL
 );
 
+/* Create tables for exams */
 CREATE TABLE DS_exam(
     roll INT NOT NULL UNIQUE PRIMARY KEY,
     obtained_number INT NOT NULL
@@ -26,65 +26,82 @@ CREATE TABLE OOP_exam(
     obtained_number INT NOT NULL
 );
 
+/* Populate the database*/
 INSERT INTO student_info (roll, name, parents_contact_number, email) VALUES
 (1, 'John Doe', '12345678901', 'john.doe@example.com'),
 (2, 'Jane Smith', '23456789012', 'jane.smith@example.com'),
-(3, 'Michael Johnson', '34567890123', 'michael.johnson@example.com'),
-(4, 'Emily Davis', '45678901234', 'emily.davis@example.com'),
-(5, 'Robert Wilson', '56789012345', 'robert.wilson@example.com'),
-(6, 'Jessica Taylor', '67890123456', 'jessica.taylor@example.com'),
-(7, 'Christopher Anderson', '78901234567', 'christopher.anderson@example.com'),
-(8, 'Amanda Brown', '89012345678', 'amanda.brown@example.com'),
-(9, 'Daniel Martinez', '90123456789', 'daniel.martinez@example.com'),
-(10, 'Olivia Thompson', '01234567890', 'olivia.thompson@example.com'),
-(11, 'James Garcia', '12345678901', 'james.garcia@example.com'),
-(12, 'Sophia Lopez', '23456789012', 'sophia.lopez@example.com'),
-(13, 'David Hernandez', '34567890123', 'david.hernandez@example.com'),
-(14, 'Isabella Clark', '45678901234', 'isabella.clark@example.com'),
-(15, 'Joseph Young', '56789012345', 'joseph.young@example.com'),
-(16, 'Mia Lewis', '67890123456', 'mia.lewis@example.com'),
-(17, 'Alexander Lee', '78901234567', 'alexander.lee@example.com'),
-(18, 'Abigail Walker', '89012345678', 'abigail.walker@example.com'),
-(19, 'Matthew Hall', '90123456789', 'matthew.hall@example.com'),
-(20, 'Sofia Hill', '01234567890', 'sofia.hill@example.com');
-
-/* SELECT * FROM student_info; */
-
--- SELECT "saddam" as name;
--- SELECT 5*10 as output;
-
--- SELECT FLOOR(RAND()*101);
+(3, 'Michael Johnson', '34567890123', 'michael.johnson@example.com');
 
 INSERT INTO DS_exam(roll, obtained_number)
 SELECT roll, FLOOR(RAND()*101) FROM student_info;
 
--- SELECT * FROM DS_exam;
-
-INSERT INTO ALGO_exam (roll, obtained_number)
+INSERT INTO ALGO_exam(roll, obtained_number)
 SELECT roll, FLOOR(RAND()*101) FROM student_info;
 
--- SELECT * FROM ALGO_exam;
-
-INSERT INTO OOP_exam (roll, obtained_number)
+INSERT INTO OOP_exam(roll, obtained_number)
 SELECT roll, FLOOR(RAND()*101) FROM student_info;
 
--- select * from OOP_exam;
+/*  Add a New Student*/
+INSERT INTO student_info (roll, name, parents_contact_number, email)
+VALUES (4, 'Emily Davis', '45678901234', 'emily.davis@example.com');
 
--- SELECT * FROM DS_exam
--- ORDER BY obtained_number ASC
--- LIMIT 1;
+/*Automatically Assign Exam Scores:*/
+INSERT INTO DS_exam (roll, obtained_number) VALUES (4, FLOOR(RAND()*101));
+INSERT INTO ALGO_exam (roll, obtained_number) VALUES (4, FLOOR(RAND()*101));
+INSERT INTO OOP_exam (roll, obtained_number) VALUES (4, FLOOR(RAND()*101));
 
--- SELECT student_info.name as student_name, DS_exam.obtained_number as number
--- FROM student_info
--- JOIN DS_exam ON student_info.roll = DS_exam.roll
--- ORDER BY obtained_number DESC
--- LIMIT 3;
+/*Update an Existing Student*/
+UPDATE student_info
+SET parents_contact_number = '56789012345', email = 'emily.new@example.com'
+WHERE roll = 4;
 
-SELECT student_info.roll, student_info.name, DS_exam.obtained_number
+/*Update Exam Scores:*/
+UPDATE DS_exam
+SET obtained_number = 90
+WHERE roll = 4;
+
+/*Delete a Student*/
+DELETE FROM student_info WHERE roll = 4;
+DELETE FROM DS_exam WHERE roll = 4;
+DELETE FROM ALGO_exam WHERE roll = 4;
+DELETE FROM OOP_exam WHERE roll = 4;
+
+
+/* Retrieve all students with scores*/
+SELECT student_info.roll, student_info.name, student_info.parents_contact_number,
+       DS_exam.obtained_number AS DS_Score,
+       ALGO_exam.obtained_number AS ALGO_Score,
+       OOP_exam.obtained_number AS OOP_Score
 FROM student_info
-JOIN DS_exam ON DS_exam.roll = student_info.roll
-where DS_exam.obtained_number < 50;
+LEFT JOIN DS_exam ON student_info.roll = DS_exam.roll
+LEFT JOIN ALGO_exam ON student_info.roll = ALGO_exam.roll
+LEFT JOIN OOP_exam ON student_info.roll = OOP_exam.roll;
 
-SELECT COUNT(*) as Failed_student_numbers
-FROM DS_exam
-where obtained_number < 50;
+/*Automatically deletes related exam records when a student is deleted*/
+DELIMITER //
+
+CREATE TRIGGER after_student_delete
+AFTER DELETE ON student_info
+FOR EACH ROW
+BEGIN
+    DELETE FROM DS_exam WHERE roll = OLD.roll;
+    DELETE FROM ALGO_exam WHERE roll = OLD.roll;
+    DELETE FROM OOP_exam WHERE roll = OLD.roll;
+END;
+//
+
+DELIMITER ;
+
+/* Create View fr generating summary*/
+CREATE VIEW student_summary AS
+SELECT student_info.roll, student_info.name,
+       DS_exam.obtained_number AS DS_Score,
+       ALGO_exam.obtained_number AS ALGO_Score,
+       OOP_exam.obtained_number AS OOP_Score,
+       (DS_exam.obtained_number + ALGO_exam.obtained_number + OOP_exam.obtained_number) AS Total_Marks
+FROM student_info
+LEFT JOIN DS_exam ON student_info.roll = DS_exam.roll
+LEFT JOIN ALGO_exam ON student_info.roll = ALGO_exam.roll
+LEFT JOIN OOP_exam ON student_info.roll = OOP_exam.roll;
+
+
