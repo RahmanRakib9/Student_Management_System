@@ -105,3 +105,5 @@ LEFT JOIN ALGO_exam ON student_info.roll = ALGO_exam.roll
 LEFT JOIN OOP_exam ON student_info.roll = OOP_exam.roll;
 
 
+
+
